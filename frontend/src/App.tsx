@@ -1,11 +1,19 @@
-// App.tsx
 import React from "react";
-import TodoList from "./components/TodoList"; // 👈 あなたのコンポーネントを読み込み
+import TodoList from "./components/TodoList";
 
 function App() {
   return (
-    <div>
-      <h1>📝 TODO リスト</h1>
+    <div
+      style={{
+        fontFamily: "Arial, sans-serif",
+        padding: "15px",
+        maxWidth: "600px",
+        margin: "0 auto",
+      }}
+    >
+      <h1 style={{ textAlign: "center", color: "#444" }}>
+        天使と悪魔のTODOリスト
+      </h1>
       <TodoList />
     </div>
   );
