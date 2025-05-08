@@ -6,7 +6,7 @@ function App() {
     <div
       style={{
         fontFamily: "Arial, sans-serif",
-        padding: "15px",
+        padding: "20px",
         maxWidth: "600px",
         margin: "0 auto",
       }}
