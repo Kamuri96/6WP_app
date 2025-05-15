@@ -81,18 +81,27 @@ export default function TodoList() {
     EXPIRED: { backgroundColor: "#d0d0d0", icon: "⚠️" },
   };
 
-  const filteredTodos = todos.filter(
-    (todo) => filter === "ALL" || todo.status === filter
-  );
+  const filteredTodos = todos
+    .filter((todo) => filter === "ALL" || todo.status === filter)
+    .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime()); // 日付順に並び替え
 
   return (
-    <div>
+    <div
+      style={{
+        maxWidth: "600px",
+        margin: "0 auto",
+        padding: "0 16px",
+        boxSizing: "border-box",
+      }}
+    >
+      {/* 入力欄 */}
       <div
         style={{
           marginBottom: "16px",
           display: "flex",
           gap: "8px",
           flexDirection: "column",
+          width: "100%",
         }}
       >
         <input
@@ -100,38 +109,42 @@ export default function TodoList() {
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
           placeholder="新しいタスクを入力"
-          style={{ padding: "8px" }}
+          style={{ padding: "10px", fontSize: "16px", width: "100%" }}
         />
         <input
           type="datetime-local"
           value={dueAt}
           onChange={(e) => setDueAt(e.target.value)}
-          style={{ padding: "8px" }}
+          style={{ padding: "10px", fontSize: "16px", width: "100%" }}
         />
-        <button onClick={addTodo} style={{ padding: "8px 16px" }}>
+        <button onClick={addTodo} style={{ padding: "10px", fontSize: "16px" }}>
           追加
         </button>
       </div>
 
+      {/* フィルター */}
       <div
         style={{
           marginBottom: "16px",
           display: "flex",
+          flexWrap: "wrap",
           justifyContent: "center",
           gap: "8px",
+          width: "100%",
         }}
       >
         {(["ALL", "TODO", "DOING", "DONE", "EXPIRED"] as const).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            style={{ padding: "6px 12px" }}
+            style={{ padding: "8px 12px", fontSize: "14px" }}
           >
             {f}
           </button>
         ))}
       </div>
 
+      {/* TODO一覧 */}
       <ul style={{ listStyle: "none", padding: 0 }}>
         {filteredTodos.map((todo) => (
           <li
@@ -143,6 +156,8 @@ export default function TodoList() {
               padding: "12px",
               marginBottom: "8px",
               borderRadius: "8px",
+              width: "100%",
+              wordBreak: "break-word",
             }}
           >
             <div
@@ -153,12 +168,17 @@ export default function TodoList() {
               }}
             >
               <div
+                onClick={
+                  todo.status !== "DONE"
+                    ? () => advanceStatus(todo.id)
+                    : undefined
+                }
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  cursor: "pointer",
+                  cursor: todo.status !== "DONE" ? "pointer" : "default",
+                  opacity: todo.status === "DONE" ? 0.6 : 1,
                 }}
-                onClick={() => advanceStatus(todo.id)}
               >
                 <span style={{ marginRight: "8px" }}>
                   {statusStyles[todo.status].icon}
