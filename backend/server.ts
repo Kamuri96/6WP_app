@@ -32,7 +32,8 @@ app.post("/todos/:id/next", (req, res) => {
   if (todo) {
     if (todo.status === "TODO") todo.status = "DOING";
     else if (todo.status === "DOING") todo.status = "DONE";
-    else if (todo.status === "DONE") todo.status = "TODO";
+    //else if (todo.status === "DONE") todo.status = "TODO";
+    else if (todo.status === "EXPIRED") todo.status = "DOING";
   }
   res.json({ success: true });
 });
