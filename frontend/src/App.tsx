@@ -1,5 +1,6 @@
 import React from "react";
 import TodoList from "./components/TodoList";
+import logo from "./assets/6WPapp仮logo.png";
 
 function App() {
   return (
@@ -11,9 +12,13 @@ function App() {
         margin: "0 auto",
       }}
     >
-      <h1 style={{ textAlign: "center", color: "#444" }}>
-        天使と悪魔のTODOリスト
-      </h1>
+      <div style={{ textAlign: "center", marginBottom: "20px" }}>
+        <img
+          src={logo}
+          alt="天使と悪魔のTODOリスト ロゴ"
+          style={{ maxWidth: "100%", height: "auto" }}
+        />
+      </div>
       <TodoList />
     </div>
   );
