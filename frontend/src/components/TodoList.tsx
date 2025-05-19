@@ -8,6 +8,8 @@ type Todo = {
   dueAt: string;
 };
 
+const API = import.meta.env.VITE_API_BASE_URL;
+
 export default function TodoList() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [newTitle, setNewTitle] = useState("");
@@ -18,60 +20,52 @@ export default function TodoList() {
 
   useEffect(() => {
     fetchTodos();
+    const interval = setInterval(fetchTodos, 10000);
+    return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    const timer = setInterval(async () => {
-      const now = new Date();
-      const expiredTodos = todos.filter(
-        (todo) =>
-          todo.status === "TODO" &&
-          !isNaN(Date.parse(todo.dueAt)) &&
-          new Date(todo.dueAt) < now
-      );
-
-      await Promise.all(
-        expiredTodos.map((todo) =>
-          axios.post(`http://localhost:3001/todos/${todo.id}/expire`)
-        )
-      );
-
-      if (expiredTodos.length > 0) {
-        fetchTodos();
-      }
-    }, 10000);
-
-    return () => clearInterval(timer);
-  }, [todos]);
-
   const fetchTodos = async () => {
-    const res = await axios.get<Todo[]>("http://localhost:3001/todos");
-    setTodos(res.data);
-  };
-
-  const advanceStatus = async (id: string) => {
-    await axios.post(`http://localhost:3001/todos/${id}/next`);
-    fetchTodos();
+    try {
+      const res = await axios.get<Todo[]>(`${API}/todos`);
+      setTodos(res.data);
+    } catch (err) {
+      console.error("取得失敗:", err);
+    }
   };
 
   const addTodo = async () => {
-    if (newTitle.trim() === "" || dueAt === "") return;
+    if (!newTitle || !dueAt) return;
+    const isoDueAt = new Date(dueAt).toISOString();
 
-    const isoString = new Date(dueAt).toISOString();
+    try {
+      await axios.post<Todo>(`${API}/todos`, {
+        title: newTitle,
+        dueAt: isoDueAt,
+      });
+      setNewTitle("");
+      setDueAt("");
+      fetchTodos();
+    } catch (err) {
+      console.error("追加失敗:", err);
+    }
+  };
 
-    await axios.post("http://localhost:3001/todos", {
-      title: newTitle,
-      dueAt: isoString,
-    });
-
-    setNewTitle("");
-    setDueAt("");
-    fetchTodos();
+  const advanceStatus = async (id: string) => {
+    try {
+      await axios.post<{ success: boolean }>(`${API}/todos/${id}/next`);
+      fetchTodos();
+    } catch (err) {
+      console.error("ステータス更新失敗:", err);
+    }
   };
 
   const deleteTodo = async (id: string) => {
-    await axios.delete(`http://localhost:3001/todos/${id}`);
-    fetchTodos();
+    try {
+      await axios.delete<{ success: boolean }>(`${API}/todos/${id}`);
+      fetchTodos();
+    } catch (err) {
+      console.error("削除失敗:", err);
+    }
   };
 
   const statusStyles = {
@@ -83,80 +77,70 @@ export default function TodoList() {
 
   const filteredTodos = todos
     .filter((todo) => filter === "ALL" || todo.status === filter)
-    .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime()); // 日付順に並び替え
+    .sort((a, b) => new Date(a.dueAt).getTime() - new Date(b.dueAt).getTime());
 
   return (
     <div
       style={{
         maxWidth: "600px",
+        width: "100%",
         margin: "0 auto",
         padding: "0 16px",
         boxSizing: "border-box",
       }}
     >
-      {/* 入力欄 */}
       <div
         style={{
           marginBottom: "16px",
           display: "flex",
-          gap: "8px",
           flexDirection: "column",
-          width: "100%",
+          gap: "8px",
         }}
       >
         <input
           type="text"
           value={newTitle}
           onChange={(e) => setNewTitle(e.target.value)}
-          placeholder="新しいタスクを入力"
-          style={{ padding: "10px", fontSize: "16px", width: "100%" }}
+          placeholder="新しいタスク"
+          style={{ padding: "10px", fontSize: "16px" }}
         />
         <input
           type="datetime-local"
           value={dueAt}
           onChange={(e) => setDueAt(e.target.value)}
-          style={{ padding: "10px", fontSize: "16px", width: "100%" }}
+          style={{ padding: "10px", fontSize: "16px" }}
         />
         <button onClick={addTodo} style={{ padding: "10px", fontSize: "16px" }}>
           追加
         </button>
       </div>
 
-      {/* フィルター */}
       <div
         style={{
-          marginBottom: "16px",
           display: "flex",
           flexWrap: "wrap",
           justifyContent: "center",
           gap: "8px",
-          width: "100%",
+          marginBottom: "16px",
         }}
       >
         {(["ALL", "TODO", "DOING", "DONE", "EXPIRED"] as const).map((f) => (
-          <button
-            key={f}
-            onClick={() => setFilter(f)}
-            style={{ padding: "8px 12px", fontSize: "14px" }}
-          >
+          <button key={f} onClick={() => setFilter(f)}>
             {f}
           </button>
         ))}
       </div>
 
-      {/* TODO一覧 */}
-      <ul style={{ listStyle: "none", padding: 0 }}>
+      <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
         {filteredTodos.map((todo) => (
           <li
             key={todo.id}
             style={{
-              display: "flex",
-              flexDirection: "column",
               backgroundColor: statusStyles[todo.status].backgroundColor,
               padding: "12px",
-              marginBottom: "8px",
               borderRadius: "8px",
-              width: "100%",
+              marginBottom: "8px",
+              overflowWrap: "break-word",
               wordBreak: "break-word",
             }}
           >
@@ -164,7 +148,7 @@ export default function TodoList() {
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                alignItems: "center",
+                flexWrap: "wrap",
               }}
             >
               <div
@@ -174,32 +158,27 @@ export default function TodoList() {
                     : undefined
                 }
                 style={{
-                  display: "flex",
-                  alignItems: "center",
                   cursor: todo.status !== "DONE" ? "pointer" : "default",
-                  opacity: todo.status === "DONE" ? 0.6 : 1,
+                  flex: "1 1 auto",
                 }}
               >
-                <span style={{ marginRight: "8px" }}>
-                  {statusStyles[todo.status].icon}
-                </span>
-                <span>
-                  <strong>{todo.status}</strong> - {todo.title}
-                </span>
+                {statusStyles[todo.status].icon} <strong>{todo.title}</strong> (
+                {todo.status})
               </div>
               <button
                 onClick={() => deleteTodo(todo.id)}
                 style={{
-                  color: "#a00",
                   background: "none",
                   border: "none",
+                  color: "#a00",
                   cursor: "pointer",
+                  paddingLeft: "8px",
                 }}
               >
                 削除
               </button>
             </div>
-            <div style={{ fontSize: "0.9em", marginTop: "6px", color: "#555" }}>
+            <div style={{ fontSize: "0.8em", color: "#555", marginTop: "6px" }}>
               期限:{" "}
               {isNaN(Date.parse(todo.dueAt))
                 ? "不明"

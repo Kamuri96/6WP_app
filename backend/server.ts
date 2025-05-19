@@ -3,63 +3,76 @@ import cors from "cors";
 
 const app = express();
 const PORT = 3001;
+const HOST = "0.0.0.0";
 
 app.use(cors());
 app.use(express.json());
 
-let todos = [
+type Todo = {
+  id: string;
+  title: string;
+  status: "TODO" | "DOING" | "DONE" | "EXPIRED";
+  dueAt: string;
+};
+
+let todos: Todo[] = [
   {
     id: "1",
     title: "洗濯する",
     status: "TODO",
-    dueAt: "2025-05-07T22:00:00.000Z",
+    dueAt: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
   },
   {
     id: "2",
     title: "勉強する",
     status: "TODO",
-    dueAt: "2025-05-08T08:00:00.000Z",
+    dueAt: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(),
   },
 ];
 
+setInterval(() => {
+  const now = new Date();
+  todos.forEach((todo) => {
+    const due = new Date(todo.dueAt);
+    if (
+      (todo.status === "TODO" || todo.status === "DOING") &&
+      !isNaN(due.getTime()) &&
+      due.getTime() < now.getTime()
+    ) {
+      todo.status = "EXPIRED";
+    }
+  });
+}, 10000);
+
 app.get("/todos", (_req, res) => {
-  console.log("現在のTODOリスト:", todos);
   res.json(todos);
 });
 
 app.post("/todos/:id/next", (req, res) => {
   const todo = todos.find((t) => t.id === req.params.id);
   if (todo) {
-    if (todo.status === "TODO") todo.status = "DOING";
-    else if (todo.status === "DOING") todo.status = "DONE";
-    //else if (todo.status === "DONE") todo.status = "TODO";
-    else if (todo.status === "EXPIRED") todo.status = "DOING";
+    if (todo.status === "EXPIRED") {
+      todo.status = "DOING";
+    } else if (todo.status === "TODO") {
+      todo.status = "DOING";
+    } else if (todo.status === "DOING") {
+      todo.status = "DONE";
+    }
+    // DONE は何もしない
   }
   res.json({ success: true });
 });
 
 app.post("/todos", (req, res) => {
-  console.log("POST /todos 受信データ:", req.body); // ここで確認
-
   const { title, dueAt } = req.body;
-
-  const newTodo = {
+  const newTodo: Todo = {
     id: Date.now().toString(),
     title,
-    status: "TODO",
     dueAt,
+    status: "TODO",
   };
-
   todos.push(newTodo);
   res.json(newTodo);
-});
-
-app.post("/todos/:id/expire", (req, res) => {
-  const todo = todos.find((t) => t.id === req.params.id);
-  if (todo && todo.status === "TODO") {
-    todo.status = "EXPIRED";
-  }
-  res.json({ success: true });
 });
 
 app.delete("/todos/:id", (req, res) => {
@@ -67,6 +80,6 @@ app.delete("/todos/:id", (req, res) => {
   res.json({ success: true });
 });
 
-app.listen(PORT, () => {
-  console.log(`API Server running at http://localhost:${PORT}`);
+app.listen(PORT, HOST, () => {
+  console.log(` API Server running at http://${HOST}:${PORT}`);
 });
