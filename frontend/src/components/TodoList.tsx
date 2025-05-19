@@ -20,7 +20,7 @@ export default function TodoList() {
 
   useEffect(() => {
     fetchTodos();
-    const interval = setInterval(fetchTodos, 10000);
+    const interval = setInterval(fetchTodos, 1000);
     return () => clearInterval(interval);
   }, []);
 

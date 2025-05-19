@@ -35,14 +35,14 @@ setInterval(() => {
   todos.forEach((todo) => {
     const due = new Date(todo.dueAt);
     if (
-      (todo.status === "TODO" || todo.status === "DOING") &&
+      todo.status === "TODO" &&
       !isNaN(due.getTime()) &&
       due.getTime() < now.getTime()
     ) {
       todo.status = "EXPIRED";
     }
   });
-}, 10000);
+}, 1000);
 
 app.get("/todos", (_req, res) => {
   res.json(todos);
